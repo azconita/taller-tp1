@@ -1,13 +1,13 @@
-#ifndef CIPHER_T
-#define CIPHER_T value
+#ifndef CIPHER_H
+#define CIPHER_H
 
 #include <stdlib.h>
 #include <stdio.h>
 
-struct cipher_t {
+typedef struct Cipher {
   unsigned char S[256];
   int i,j;
-} typedef cipher_t;
+} cipher_t;
 
 int cipher_init(cipher_t* c, char* key, int keylength);
 int cipher_get_keystream(cipher_t* c, size_t length, unsigned char* keystream);
