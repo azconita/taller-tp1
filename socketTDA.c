@@ -1,6 +1,6 @@
 #include "socketTDA.h"
 
-int socket_create(socket_t *s);
+int socket_create(socket_t *self, char *port) {
   struct addrinfo hints;
   struct addrinfo *result, *rp;
   int sfd, s;
@@ -10,58 +10,92 @@ int socket_create(socket_t *s);
   hints.ai_family = AF_INET;       // IPv4
   hints.ai_socktype = SOCK_STREAM; // TCP
 
-  s = getaddrinfo(NULL, argv[1], &hints, &result);
+  s = getaddrinfo(NULL, port, &hints, &result);
   if (s != 0) {
     fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
     exit(2);
   }
 
   for (rp = result; rp != NULL; rp = rp->ai_next) {
-    sfd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
-    if (sfd == -1)
+    self->sock = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+    if (self->sock == -1)
       continue;
   }
 
   freeaddrinfo(result);           /* No longer needed */
-  s->sfd;
 }
 
 
 int socket_bind_and_listen(socket_t *self, unsigned short port) {
+  struct sockaddr_in serv_addr;
+  memset(&serv_addr, 0, sizeof(struct sockaddr_in));
+
+  // configure server information
+  serv_addr.sin_family = AF_INET;
+  serv_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+  serv_addr.sin_port = ntohs(port);
+
   // Decimos en que direccion local queremos escuchar, en especial el puerto
   // De otra manera el sistema operativo elegiria un puerto random
   // y el cliente no sabria como conectarse
-  s = bind(skt, ptr->ai_addr, ptr->ai_addrlen);
-  if (s == -1) {
+  if (bind(self->sock, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) == -1) {
      printf("Error: %s\n", strerror(errno));
-     close(skt);
-     freeaddrinfo(ptr);
+     close(self->sock);
      return 1;
   }
 
-  freeaddrinfo(ptr);
 
   // Cuanto clientes podemos mantener en espera antes de poder acceptarlos?
-  s = listen(skt, 20);
-  if (s == -1) {
+  if (listen(self->sock, 1) == -1) { //1 o 0?
      printf("Error: %s\n", strerror(errno));
-     close(skt);
+     close(self->sock);
      return 1;
   }
 }
 
-int socket_connect(socket_t *s, const char* host_name, unsigned short port) {
-  if (connect(s->sock, rp->ai_addr, rp->ai_addrlen) != -1)
-    close(s->sock);
+int socket_connect(socket_t *self, const char* host_name, unsigned short port) {
+  struct sockaddr_in serv_addr;
+  // configure server information
+  serv_addr.sin_family = AF_INET;
+  inet_pton(AF_INET, host_name, &serv_addr.sin_addr.s_addr);
+  //serv_addr.sin_addr.s_addr = htonl(host_name);
+  serv_addr.sin_port = ntohs(port);
+  if (connect(self->sock, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) != -1) {
+    close(self->sock);
   }
 }
 
-int socket_accept(socket_t *s, socket_t *new_s);
-  new_s->sock = accept(skt, NULL, NULL);   // aceptamos un cliente
+int socket_accept(socket_t *self, socket_t *new_s) {
+  new_s->sock = accept(self->sock, NULL, NULL);   // aceptamos un cliente
   if (new_s->sock == -1) {
     printf("Error: %s\n", strerror(errno));
+  }
 }
 
-int socket_destroy(socket_t *s) {
-  close(s->sock)
+int socket_destroy(socket_t *self) {
+  close(self->sock);
+}
+
+int socket_send(socket_t *self, size_t size, const char *buffer) {
+  int total_sent, sent;
+
+  while((sent = send(self->sock, &buffer[total_sent], size - total_sent, MSG_NOSIGNAL)) >= 0) {
+    total_sent += sent;
+  }
+  // if sent == 0: socket closed
+  if (sent < 0) {
+    printf("Error: %s\n", strerror(errno));
+  }
+}
+
+int socket_receive(socket_t *self, size_t size, const char *buffer) {
+  int total_received, received;
+
+  while((received = recv(self->sock, (void*) &buffer[total_received], size - total_received, MSG_NOSIGNAL)) >= 0) {
+    total_received += received;
+  }
+  // if sent == 0: socket closed
+  if (received < 0) {
+    printf("Error: %s\n", strerror(errno));
+  }
 }
