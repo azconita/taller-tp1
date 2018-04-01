@@ -95,6 +95,7 @@ int socket_accept(socket_t *self, socket_t *new_s) {
 
 int socket_destroy(socket_t *self) {
   close(self->sock);
+  return 0;
 }
 
 void socket_shutdown(socket_t *self) {

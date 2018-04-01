@@ -12,7 +12,7 @@ int cipher_init(cipher_t* c, char* key, int keylength){
   return 0;
 }
 int cipher_get_keystream(cipher_t* c, size_t length, unsigned char* keystream) {
-  int i, k;
+  int i;
   for (i = 0; i < length; i++) {
     keystream[i] = PRGA(c);
   }
@@ -20,10 +20,12 @@ int cipher_get_keystream(cipher_t* c, size_t length, unsigned char* keystream) {
 }
 int cipher_encrypt(cipher_t* c, unsigned char* original, unsigned char* encrypted, size_t length) {
   cipher(c, original, encrypted, length);
+  return 0;
 }
 
 int cipher_decrypt(cipher_t* c, unsigned char* original, unsigned char* decrypted, size_t length) {
   cipher(c, original, decrypted, length);
+  return 0;
 }
 
 int KSA(unsigned char S[256], unsigned char *key, int keylength) {
