@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+#include <sys/un.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
