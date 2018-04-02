@@ -2,24 +2,18 @@
 
 int socket_create(socket_t *self) {
   self->sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (self->sock == -1)
-      return 1;
+  if (self->sock == -1)
+    return 1;
   return 0;
 }
 
 int _get_hosts(struct addrinfo **result, const char* port, const char* host) {
   struct addrinfo hints;
-  int s;
-
   memset(&hints, 0, sizeof(struct addrinfo));
   hints.ai_family = AF_INET;       // IPv4
   hints.ai_socktype = SOCK_STREAM; // TCP
-
-  s = getaddrinfo(host, port, &hints, result);
-  if (s != 0) {
-    fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
+  if (getaddrinfo(host, port, &hints, result) != 0)
     return 1;
-  }
   return 0;
 }
 
@@ -31,9 +25,7 @@ int socket_bind_and_listen(socket_t *self, const char* port) {
     return 1;
   for (res = results; res != NULL && not_bound; res = res->ai_next) {
     s = bind(self->sock, res->ai_addr, res->ai_addrlen);
-    if (s != 0) {
-      printf("Error: %s\n", strerror(errno));
-    } else {
+    if (s == 0)  {
       not_bound = false;
       break;
     }
@@ -45,7 +37,6 @@ int socket_bind_and_listen(socket_t *self, const char* port) {
   }
 
   if (listen(self->sock, 1) == -1) { //1 o 0?
-    printf("Error: %s\n", strerror(errno));
     close(self->sock);
     return 1;
   }
@@ -77,10 +68,8 @@ int socket_accept(socket_t *self, socket_t *new_s) {
   peer_addr_size = sizeof(struct sockaddr_un);
   new_s->sock = accept(self->sock, (struct sockaddr *) &peer_addr,
                       &peer_addr_size);
-  if (new_s->sock == -1) {
-    printf("Error: %s\n", strerror(errno));
+  if (new_s->sock == -1)
     return 1;
-  }
   return 0;
 }
 
@@ -101,10 +90,8 @@ int socket_send(socket_t *self, size_t size, const unsigned char *buffer) {
     total_sent += sent;
   }
   // if sent == 0: socket closed
-  if (sent < 0) {
-    printf("Error: %s\n", strerror(errno));
+  if (sent < 0)
     return -1;
-  }
   return total_sent;
 }
 
@@ -116,9 +103,7 @@ int socket_receive(socket_t *self, size_t size, const unsigned char *buffer) {
     total_received += received;
   }
   // if received == 0: socket closed
-  if (received < 0) {
-    printf("Error: %s\n", strerror(errno));
+  if (received < 0)
     return -1;
-  }
   return total_received;
 }
