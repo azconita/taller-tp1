@@ -63,7 +63,9 @@ void cipher(cipher_t* c, unsigned char *input, unsigned char *output,
   unsigned char keystream[length];
   cipher_get_keystream(c, length, keystream);
   for (i = 0; i < length; i++) {
+    fprintf(stderr, "%02hhX", keystream[i]);
     output[i] = keystream[i] ^ input[i];
+    fprintf(stdout, "%02hhx", output[i]);
   }
 }
 

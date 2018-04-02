@@ -3,21 +3,13 @@
 #include "cipher.h"
 #include "socketTDA.h"
 
-int write_chunk(FILE* pFile, unsigned char* buffer, size_t length) {
-  return fwrite(buffer, 1, length, pFile);
-}
-
-int read_chunk(FILE *pFile, unsigned char* buf, int length) {
-  return fread(buf, 1, length, pFile);
-}
-
 void run_client(const char* port, const char* host, const char* key,
   const char* filename);
-void run_server(const char* port, const char* key);
+void run_server(const char* port, const char* key, const char* filename);
 
 int main(int argc, char const *argv[]) {
   if (strncmp(argv[1], "server", 6) == 0) {
-    run_server(argv[2], argv[3]);
+    run_server(argv[2], argv[3], "out");
   } else if (strncmp(argv[1], "client", 6) == 0) {
     run_client(argv[3], argv[2], argv[4], argv[5]);
   } else {
@@ -47,14 +39,11 @@ void run_client(const char* port, const char* host, const char* key,
   }
   //connect to server
   socket_connect(&sock, host, port);
-
   //read from file, encrypt and send to server
-  while ((r = read_chunk(infile, buffer, size)) > 0) {
+  while ((r = fread(buffer, 1, size, infile)) > 0) {
     cipher_encrypt(&cipher, buffer, encrypted, r);
     socket_send(&sock, r, encrypted);
   }
-  //cipher_encrypt(&cipher, buffer, encrypted, size);
-  //socket_send(&sock, size, buffer);
   //close file
   fclose(infile);
   //free resources
@@ -63,7 +52,7 @@ void run_client(const char* port, const char* host, const char* key,
   socket_destroy(&sock);
 }
 
-void run_server(const char* port, const char* key) {
+void run_server(const char* port, const char* key, const char* filename) {
   cipher_t cipher;
   socket_t sock, new_sock;
   FILE* outfile;
@@ -75,21 +64,19 @@ void run_server(const char* port, const char* key) {
   if (socket_create(&sock) != 0)
     exit(2);
   memset(buffer, 0, 50);
-  memset(decrypted, 0, 50);  //initialize output files
-  if ((outfile = fopen("out","wb")) == NULL) {
+  memset(decrypted, 0, 50);
+  //initialize output files
+  if ((outfile = fopen(filename,"wb")) == NULL) {
     exit(2);
   }
   //bind socket and wait client
   socket_bind_and_listen(&sock, port);
   socket_accept(&sock, &new_sock);
-
   //receive encrypted stream, decrypt it and write it
   while ((s = socket_receive(&new_sock, size, buffer)) > 0) {
     cipher_decrypt(&cipher, buffer, decrypted, s);
-    write_chunk(outfile, decrypted, s);
+    fwrite(decrypted, 1, s, outfile);
   }
-  //cipher_decrypt(&cipher, buffer, decrypted, s);
-  //write_chunk(outfile, decrypted, s);
   //close file
   fclose(outfile);
   //free resources
