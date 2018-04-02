@@ -1,12 +1,13 @@
 #include "cipher.h"
 
-int KSA(unsigned char S[256], unsigned char *key, int keylength);
+int KSA(unsigned char S[256], const unsigned char *key, int keylength);
 unsigned char PRGA(cipher_t* c);
-void cipher(cipher_t* c, unsigned char *input, unsigned char *output, size_t length);
+void cipher(cipher_t* c, unsigned char *input, unsigned char *output,
+            size_t length);
 
-int cipher_init(cipher_t* c, char* key, int keylength){
+int cipher_init(cipher_t* c, const char* key, int keylength){
   if (KSA(c->S,(unsigned char *) key, keylength) != 0)
-    exit(2);
+    return -1;
   c->i = 0;
   c->j = 0;
   return 0;
@@ -18,17 +19,19 @@ int cipher_get_keystream(cipher_t* c, size_t length, unsigned char* keystream) {
   }
   return 0;
 }
-int cipher_encrypt(cipher_t* c, unsigned char* original, unsigned char* encrypted, size_t length) {
+int cipher_encrypt(cipher_t* c, unsigned char* original,
+                    unsigned char* encrypted, size_t length) {
   cipher(c, original, encrypted, length);
   return 0;
 }
 
-int cipher_decrypt(cipher_t* c, unsigned char* original, unsigned char* decrypted, size_t length) {
+int cipher_decrypt(cipher_t* c, unsigned char* original,
+                    unsigned char* decrypted, size_t length) {
   cipher(c, original, decrypted, length);
   return 0;
 }
 
-int KSA(unsigned char S[256], unsigned char *key, int keylength) {
+int KSA(unsigned char S[256], const unsigned char *key, int keylength) {
   int i, k, j = 0;
   for (i = 0; i < 256; i++) {
     S[i] = i;
@@ -54,11 +57,21 @@ unsigned char PRGA(cipher_t* c) {
   return K;
 }
 
-void cipher(cipher_t* c, unsigned char *input, unsigned char *output, size_t length) {
+void cipher(cipher_t* c, unsigned char *input, unsigned char *output,
+            size_t length) {
   size_t i;
   unsigned char keystream[length];
   cipher_get_keystream(c, length, keystream);
   for (i = 0; i < length; i++) {
     output[i] = keystream[i] ^ input[i];
   }
+}
+
+void cipher_destroy(cipher_t* c) {
+  int i;
+  for (i = 0; i < 255; i++) {
+    c->S[i] = 0;
+  }
+  c->i = 0;
+  c->j = 0;
 }

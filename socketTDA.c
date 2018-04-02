@@ -24,11 +24,6 @@ int _get_hosts(struct addrinfo **result, const char* port, const char* host) {
 }
 
 int socket_bind_and_listen(socket_t *self, const char* port) {
-  /*struct sockaddr_in serv_addr;
-  memset(&serv_addr, 0, sizeof(struct sockaddr_in));
-  serv_addr.sin_family = AF_INET;
-  serv_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-  serv_addr.sin_port = ntohs(port);*/
   struct addrinfo *results, *res;
   int s;
   bool not_bound = true;
@@ -43,7 +38,7 @@ int socket_bind_and_listen(socket_t *self, const char* port) {
       break;
     }
   }
-  freeaddrinfo(results);           /* No longer needed */
+  freeaddrinfo(results);
   if (s != 0) {
     close(self->sock);
     return 1;
@@ -58,11 +53,6 @@ int socket_bind_and_listen(socket_t *self, const char* port) {
 }
 
 int socket_connect(socket_t *self, const char* host, const char* port) {
-  /*struct sockaddr_in serv_addr;
-  serv_addr.sin_family = AF_INET;
-  inet_pton(AF_INET, host, &serv_addr.sin_addr.s_addr);
-  serv_addr.sin_port = ntohs(port);*/
-
   struct addrinfo *results, *res;
   int s;
   if (_get_hosts(&results, port, host) != 0)
@@ -73,7 +63,7 @@ int socket_connect(socket_t *self, const char* host, const char* port) {
     else
       break;
   }
-  freeaddrinfo(results);           /* No longer needed */
+  freeaddrinfo(results);
   if (s == -1) {
     close(self->sock);
     return 1;
@@ -85,7 +75,8 @@ int socket_accept(socket_t *self, socket_t *new_s) {
   struct sockaddr_un peer_addr;
   socklen_t peer_addr_size;
   peer_addr_size = sizeof(struct sockaddr_un);
-  new_s->sock = accept(self->sock, (struct sockaddr *) &peer_addr, &peer_addr_size);
+  new_s->sock = accept(self->sock, (struct sockaddr *) &peer_addr,
+                      &peer_addr_size);
   if (new_s->sock == -1) {
     printf("Error: %s\n", strerror(errno));
     return 1;
@@ -102,10 +93,11 @@ void socket_shutdown(socket_t *self) {
    shutdown(self->sock, SHUT_RDWR);
 }
 
-int socket_send(socket_t *self, size_t size, const char *buffer) {
+int socket_send(socket_t *self, size_t size, const unsigned char *buffer) {
   int sent, total_sent = 0;
 
-  while((sent = send(self->sock, &buffer[total_sent], size - total_sent, MSG_NOSIGNAL)) > 0) {
+  while ((sent = send(self->sock, &buffer[total_sent], size - total_sent,
+              MSG_NOSIGNAL)) > 0) {
     total_sent += sent;
   }
   // if sent == 0: socket closed
@@ -116,10 +108,11 @@ int socket_send(socket_t *self, size_t size, const char *buffer) {
   return total_sent;
 }
 
-int socket_receive(socket_t *self, size_t size, const char *buffer) {
+int socket_receive(socket_t *self, size_t size, const unsigned char *buffer) {
   int received, total_received = 0;
 
-  while((received = recv(self->sock, (void*) &buffer[total_received], size - total_received, MSG_NOSIGNAL)) > 0) {
+  while ((received = recv(self->sock, (void*) &buffer[total_received],
+              size - total_received, MSG_NOSIGNAL)) > 0) {
     total_received += received;
   }
   // if received == 0: socket closed
