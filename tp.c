@@ -27,20 +27,26 @@ void run_client(const char* port, const char* host, const char* key,
   FILE* infile;
   unsigned char buffer[65], encrypted[65];
   int r, size = 65;
-  //initialize structures
-  if (cipher_init(&cipher, key, strlen(key)) != 0)
-    exit(2);
-  if (socket_create(&sock) != 0)
-    exit(2);
-  memset(buffer, 0, 65);
-  memset(encrypted, 0, 65);
   //initialize input files
   if ((infile = fopen(filename,"rb")) == NULL) {
     exit(2);
   }
+  //initialize structures
+  if (cipher_init(&cipher, key, strlen(key)) != 0) {
+    fclose(infile);
+    exit(2);
+  }
+  if (socket_create(&sock) != 0) {
+    cipher_destroy(&cipher);
+    fclose(infile);
+    exit(2);
+  }
+  memset(buffer, 0, 65);
+  memset(encrypted, 0, 65);
   //connect to server
   if (socket_connect(&sock, host, port) != 0) {
     cipher_destroy(&cipher);
+    socket_destroy(&sock);
     fclose(infile);
     exit(2);
   }
@@ -63,21 +69,27 @@ void run_server(const char* port, const char* key, const char* filename) {
   FILE* outfile;
   unsigned char buffer[50], decrypted[50];
   int s, size = 50;
-  //initialize structures
-  if (cipher_init(&cipher, key, strlen(key)) != 0)
-    exit(2);
-  if (socket_create(&sock) != 0)
-    exit(2);
-  memset(buffer, 0, 50);
-  memset(decrypted, 0, 50);
   //initialize output files
   if ((outfile = fopen(filename,"wb")) == NULL) {
     exit(2);
   }
+  //initialize structures
+  if (cipher_init(&cipher, key, strlen(key)) != 0) {
+    fclose(outfile);
+    exit(2);
+  }
+  if (socket_create(&sock) != 0) {
+    fclose(outfile);
+    cipher_destroy(&cipher);
+    exit(2);
+  }
+  memset(buffer, 0, 50);
+  memset(decrypted, 0, 50);
   //bind socket and wait client
   if ((socket_bind_and_listen(&sock, port) != 0)
                 || (socket_accept(&sock, &new_sock) != 0)) {
     cipher_destroy(&cipher);
+    socket_destroy(&sock);
     fclose(outfile);
     exit(2);
   }
